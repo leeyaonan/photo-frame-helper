@@ -62,6 +62,9 @@ class Photo:
         elif self.orientation == 8:
             self.img = self.img.transpose(Image.ROTATE_90)
         
+        # 更新方向为正常方向（1），防止重复旋转
+        self.orientation = 1
+        
         return self.img
     
     @property

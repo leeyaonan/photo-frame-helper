@@ -67,7 +67,7 @@ def process_image(photo, output_dir, frame_color, frame_width, selected_params):
                         y_offset += 20
         
         # 保存新图片
-        filename = os.path.basename(image_path)
+        filename = os.path.basename(photo.path)
         new_filename = f"framed_{filename}"
         new_file_path = os.path.join(output_dir, new_filename)
         

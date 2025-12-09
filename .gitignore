@@ -29,7 +29,6 @@ output/
 *.png
 
 # Test files
-test_output/
 
 # Font test file
 font_test.png
@@ -37,3 +36,7 @@ font_test.png
 # Temporary files
 *.tmp
 *.temp
+
+# exclude Logo
+!logo/
+!logo/*.png

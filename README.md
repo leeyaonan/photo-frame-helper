@@ -25,7 +25,7 @@
 
 1. **克隆仓库**
    ```bash
-   git clone https://github.com/your_username/photo-frame-helper.git
+   git clone https://github.com/leeyaonan/photo-frame-helper.git
    cd photo-frame-helper
    ```
 
@@ -110,7 +110,7 @@ photo-frame-helper/
 ## 📞 联系方式
 
 如有问题或建议，欢迎通过以下方式联系：
-- GitHub Issue：[项目Issues页面](https://github.com/your_username/photo-frame-helper/issues)
+- GitHub Issue：[项目Issues页面](https://github.com/leeyaonan/photo-frame-helper/issues)
 
 ## 📋 更新日志
 
