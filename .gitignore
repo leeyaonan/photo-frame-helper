@@ -1,0 +1,39 @@
+# Python byte-compiled / optimized / DLL files
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+.venv/
+venv/
+env/
+ENV/
+
+# IDE directories and files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+logs/
+
+# User-generated output files
+output/
+*.jpg
+*.jpeg
+*.png
+
+# Test files
+test_output/
+
+# Font test file
+font_test.png
+
+# Temporary files
+*.tmp
+*.temp
