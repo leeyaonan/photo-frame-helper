@@ -1,17 +1,44 @@
 import os
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
-from PIL import Image, ImageDraw, ImageFont, ExifTags, ImageTk
 import glob
+import threading
+from PIL import Image, ImageDraw, ImageFont, ExifTags, ImageTk
 from entity.photo import Photo
 from template.template_context import get_template_context
 from template import FrameTemplate
+from config import config_manager
 
 class PhotoFrameHelper:
     def __init__(self, root):
         self.root = root
-        self.root.title("照片相框助手")
-        self.root.geometry("800x600")  # 增加窗口高度以容纳预览区域
+        # 从配置文件获取窗口标题
+        window_title = config_manager.get_window_title()
+        self.root.title(window_title)
+        
+        # 从配置文件获取窗口大小
+        window_width = config_manager.get_window_size()[0]
+        window_height = config_manager.get_window_size()[1]
+        
+        # 计算窗口居中的位置
+        screen_width = self.root.winfo_screenwidth()
+        screen_height = self.root.winfo_screenheight()
+        x = (screen_width // 2) - (window_width // 2)
+        y = (screen_height // 2) - (window_height // 2)
+        
+        # 设置窗口大小和位置（居中）
+        self.root.geometry(f"{window_width}x{window_height}+{x}+{y}")  # 增加窗口高度以容纳预览区域
+        
+        # 设置窗口图标
+        try:
+            # 从配置文件获取logo路径
+            logo_path = config_manager.get_logo_path()
+            icon_path = FrameTemplate.get_resource_path(logo_path)
+            if os.path.exists(icon_path):
+                self.icon = tk.PhotoImage(file=icon_path)
+                self.root.iconphoto(True, self.icon)
+        except Exception as e:
+            print(f"设置窗口图标失败: {e}")
         
         # 初始化变量
         self.photo_files = []
@@ -23,15 +50,17 @@ class PhotoFrameHelper:
         
         # 输出目录设置变量
         self.output_mode = tk.StringVar(value="指定目录")  # 输出模式：指定目录、原始照片所在文件夹
-        self.subfolder_var = tk.StringVar(value="output")  # 子文件夹名称
+        # 从配置文件获取默认输出目录
+        default_output_dir = config_manager.get_default_output_directory()
+        self.subfolder_var = tk.StringVar(value=default_output_dir)  # 子文件夹名称
         self.use_subfolder = tk.BooleanVar(value=False)  # 是否使用子文件夹
         
         # 初始化模板上下文管理器
         self.template_context = get_template_context()
         # 获取所有模板名称
         self.available_templates = self.template_context.get_all_template_names()
-        # 默认模板
-        self.default_template = self.template_context.get_default_template()
+        # 从配置文件获取默认模板
+        self.default_template = config_manager.get_default_template()
         
         # 创建样式
         style = ttk.Style()
@@ -72,7 +101,11 @@ class PhotoFrameHelper:
         # 相框模板
         ttk.Label(main_frame, text="模板:").grid(row=1, column=1, sticky=tk.W, padx=(5, 0))
         # 使用从模板上下文获取的模板名称列表
-        self.template_var = tk.StringVar(value=self.available_templates[0] if self.available_templates else "")
+        # 从配置文件获取默认模板
+        default_template = config_manager.get_default_template()
+        # 如果默认模板在可用模板列表中，则使用它，否则使用第一个模板
+        initial_template = default_template if default_template in self.available_templates else self.available_templates[0] if self.available_templates else ""
+        self.template_var = tk.StringVar(value=initial_template)
         template_combo = ttk.Combobox(main_frame, textvariable=self.template_var, values=self.available_templates, state='readonly')
         template_combo.grid(row=1, column=1, sticky=tk.W, padx=(50, 5))
         
@@ -137,6 +170,13 @@ class PhotoFrameHelper:
         
         # 添加点击事件，用于实时预览
         self.processed_listbox.bind('<<ListboxSelect>>', self.on_processed_item_select)
+        
+        # 创建右键菜单
+        self.context_menu = tk.Menu(self.processed_listbox, tearoff=0)
+        self.context_menu.add_command(label="打开文件所在目录", command=self.on_open_file_location)
+        
+        # 绑定右键点击事件
+        self.processed_listbox.bind('<Button-3>', self.on_context_menu)
         
         # 右边：实时预览区域
         preview_label = ttk.Label(result_frame, text="预览:")
@@ -262,8 +302,11 @@ class PhotoFrameHelper:
             
             return new_img
         except Exception as e:
+            import traceback
             print(f"处理图片失败: {e}")
-            return None
+            print(f"异常堆栈: {traceback.format_exc()}")
+            # 抛出异常而不是返回None，这样上层调用可以捕获并显示错误信息
+            raise Exception(f"处理图片失败: {e}") from e
     
     def map_param_to_exif_tag(self, param):
         """将中文参数映射到EXIF标签"""
@@ -289,6 +332,7 @@ class PhotoFrameHelper:
         
         # 检查输出目录设置
         output_mode = self.output_mode.get()
+        output_dir = None  # 默认值
         if output_mode == "指定目录":
             output_dir = self.output_dir_var.get()
             if not output_dir:
@@ -299,15 +343,64 @@ class PhotoFrameHelper:
         self.processed_files = []
         self.processed_listbox.delete(0, tk.END)
         
-        # 处理每张图片
+        # 创建进度条窗口
+        self.progress_window = tk.Toplevel(self.root)
+        self.progress_window.title("批量处理进度")
+        self.progress_window.geometry("400x120")
+        self.progress_window.resizable(False, False)
+        
+        # 计算进度条窗口的位置，使其居中显示
+        window_width = 400
+        window_height = 130  # 调整窗口高度，避免过大
+        screen_width = self.progress_window.winfo_screenwidth()
+        screen_height = self.progress_window.winfo_screenheight()
+        x = (screen_width // 2) - (window_width // 2)
+        y = (screen_height // 2) - (window_height // 2)
+        self.progress_window.geometry(f"{window_width}x{window_height}+{x}+{y}")
+        
+        # 创建进度条
+        self.progress_var = tk.DoubleVar()
+        self.progress_bar = ttk.Progressbar(self.progress_window, variable=self.progress_var, maximum=100, length=350)
+        self.progress_bar.pack(pady=20)
+        
+        # 创建进度标签
+        self.progress_label = ttk.Label(self.progress_window, text="准备开始处理...")
+        self.progress_label.pack(pady=5)
+        
+        # 创建终止按钮（使用tk.Button而不是ttk.Button以确保文本显示）
+        self.cancel_button = tk.Button(self.progress_window, text="终止处理", command=self.cancel_batch_process, width=15, height=1)  # 调整按钮高度，避免过大
+        self.cancel_button.pack(pady=5)
+        
+        # 设置终止标志
+        self.is_cancelled = False
+        
+        # 启动处理线程
+        self.process_thread = threading.Thread(target=self._process_images_in_thread, args=(output_dir,))
+        self.process_thread.daemon = True
+        self.process_thread.start()
+        
+        # 定期检查线程是否完成
+        self.check_processing_status()
+    
+    def _process_images_in_thread(self, output_dir):
+        """在后台线程中处理图片"""
+        total_files = len(self.photo_files)
         success_count = 0
-        for file_path in self.photo_files:
+        
+        for i, file_path in enumerate(self.photo_files):
+            if self.is_cancelled:
+                break
+            
+            # 更新进度（在主线程中进行）
+            progress = ((i + 1) / total_files) * 100
+            self.root.after(0, self._update_progress, progress, file_path, i+1, total_files)
+            
             try:
                 # 创建Photo对象封装照片信息
                 photo = Photo(file_path)
                 # 处理图片
                 new_img = self.process_image(photo)
-                if new_img:
+                if new_img and not self.is_cancelled:
                     # 确定输出路径
                     filename = os.path.basename(file_path)
                     new_filename = f"framed_{filename}"
@@ -333,15 +426,66 @@ class PhotoFrameHelper:
                     try:
                         new_img.save(new_file_path, "JPEG")
                         success_count += 1
-                        # 添加到处理成功列表
-                        self.processed_files.append(new_file_path)
-                        self.processed_listbox.insert(tk.END, new_filename)
+                        # 添加到处理成功列表（在主线程中更新UI）
+                        self.root.after(0, self._update_processed_list, new_filename, new_file_path)
                     except Exception as e:
-                        messagebox.showerror("错误", f"保存图片失败: {e}")
+                        # 错误信息在主线程中显示
+                        self.root.after(0, messagebox.showerror, "错误", f"保存图片失败: {e}")
             except Exception as e:
-                messagebox.showerror("错误", f"处理图片 {file_path} 失败: {e}")
+                # 错误信息在主线程中显示
+                self.root.after(0, messagebox.showerror, "错误", f"处理图片 {file_path} 失败: {e}")
         
-        messagebox.showinfo("完成", f"批量处理完成！成功处理 {success_count} 张图片")
+        # 处理完成后更新进度（在主线程中进行）
+        self.root.after(0, self._update_progress, 100, "", 0, 0)
+        
+        # 显示处理结果
+        if self.is_cancelled:
+            self.root.after(0, messagebox.showinfo, "处理终止", f"处理已终止。已成功处理 {success_count} 张图片")
+        else:
+            self.root.after(0, messagebox.showinfo, "完成", f"批量处理完成！成功处理 {success_count} 张图片")
+        
+        # 关闭进度条窗口
+        self.root.after(1000, self._close_progress_window)
+    
+    def _update_progress(self, progress, filename, current, total):
+        """在主线程中更新进度条和进度标签"""
+        self.progress_var.set(progress)
+        if progress < 100 and filename:
+            self.progress_label.config(text=f"正在处理: {os.path.basename(filename)} ({current}/{total})")
+        elif progress >= 100:
+            self.progress_label.config(text="处理完成！")
+    
+    def _update_processed_list(self, filename, file_path):
+        """更新处理结果列表（在主线程中执行）"""
+        self.processed_files.append(file_path)
+        self.processed_listbox.insert(tk.END, filename)
+    
+    def _close_progress_window(self):
+        """关闭进度条窗口"""
+        if hasattr(self, 'progress_window') and self.progress_window.winfo_exists():
+            self.progress_window.destroy()
+    
+    def cancel_batch_process(self):
+        """取消批量处理"""
+        self.is_cancelled = True
+        # 在主线程中更新UI
+        self.root.after(0, self._update_cancel_ui)
+    
+    def _update_cancel_ui(self):
+        """在主线程中更新终止处理的UI"""
+        if hasattr(self, 'progress_label'):
+            self.progress_label.config(text="正在终止处理...")
+        if hasattr(self, 'cancel_button'):
+            self.cancel_button.config(state=tk.DISABLED)
+    
+    def check_processing_status(self):
+        """检查处理状态，更新进度条"""
+        if hasattr(self, 'process_thread') and self.process_thread.is_alive():
+            # 如果线程还在运行，继续检查
+            self.root.after(100, self.check_processing_status)
+        else:
+            # 线程已结束，不需要再检查
+            pass
     
     def on_processed_item_double_click(self, event):
         """处理双击事件，打开对应的图片"""
@@ -355,6 +499,34 @@ class PhotoFrameHelper:
                     os.system(f'open "{file_path}"')
                 except Exception as e:
                     messagebox.showerror("错误", f"打开图片失败: {e}")
+    
+    def on_context_menu(self, event):
+        """显示右键菜单"""
+        try:
+            # 获取右键点击的位置
+            self.processed_listbox.selection_clear(0, tk.END)
+            # 计算点击位置对应的索引
+            index = self.processed_listbox.nearest(event.y)
+            self.processed_listbox.selection_set(index)
+            # 显示菜单
+            self.context_menu.post(event.x_root, event.y_root)
+        except Exception as e:
+            print(f"显示右键菜单失败: {e}")
+    
+    def on_open_file_location(self):
+        """打开文件所在目录"""
+        selection = self.processed_listbox.curselection()
+        if selection:
+            index = selection[0]
+            if index < len(self.processed_files):
+                file_path = self.processed_files[index]
+                try:
+                    # 获取文件所在目录
+                    file_dir = os.path.dirname(file_path)
+                    # 使用系统命令打开目录
+                    os.system(f'open "{file_dir}"')
+                except Exception as e:
+                    messagebox.showerror("错误", f"打开文件所在目录失败: {e}")
     
     def on_processed_item_select(self, event):
         """处理点击事件，实时预览选中的图片"""

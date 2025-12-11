@@ -3,10 +3,7 @@
 ## 📅 发布日期
 {{RELEASE_DATE}}
 
-## 🎯 项目概述
-照片相框助手是一个用于为照片添加精美相框的工具，支持图形界面(GUI)和命令行(CLI)两种使用方式，帮助用户轻松为照片增添艺术效果。
-
-## ✨ 已实现功能
+## ✨ 版本核心功能
 
 ### 核心功能
 - ✅ {{CORE_FEATURE_1}}
@@ -79,39 +76,3 @@
    - {{TECH_ITEM_1}}
    - {{TECH_ITEM_2}}
    - {{TECH_ITEM_3}}
-
-## 📁 项目结构
-```
-photoFrameHelper/
-├── photo_frame_helper.py   # 主应用程序
-├── simple_gui.py           # GUI界面实现
-├── cli_version.py          # 命令行版本
-├── requirements.txt        # 依赖列表
-├── .gitignore             # Git忽略规则
-├── logo/                  # 应用图标
-├── release_notes/         # 发布日志目录
-└── test_photos/           # 测试照片
-```
-
-## 📦 安装与运行
-
-### 安装依赖
-```bash
-pip install -r requirements.txt
-```
-
-### 运行GUI版本
-```bash
-python photo_frame_helper.py
-```
-
-### 运行命令行版本
-```bash
-python cli_version.py --help
-```
-
-## 🤝 贡献
-欢迎提交Issue和Pull Request来帮助改进这个项目！
-
-## 📄 许可证
-MIT License

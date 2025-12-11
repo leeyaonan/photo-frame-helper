@@ -10,66 +10,49 @@ from typing import List, Type
 
 from .frame_template import FrameTemplate
 from .template_context import get_template_context
+from config.config_manager import config_manager
+
+# 获取资源文件的路径，支持PyInstaller打包后的情况
+def get_resource_path(relative_path):
+    # 检查是否是PyInstaller打包后的环境
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative_path)
+    # 如果是开发环境，直接返回相对路径
+    return os.path.join(os.path.abspath(""), relative_path)
 
 # 获取模板实现目录路径
-TEMPLATE_IMPL_DIR = os.path.join(os.path.dirname(__file__), "impl")
-
-
-def _load_template_classes() -> List[Type[FrameTemplate]]:
-    """
-    动态加载impl目录下的所有模板类
-    
-    返回:
-        模板类列表
-    """
-    template_classes = []
-    
-    # 确保impl目录在Python路径中
-    if TEMPLATE_IMPL_DIR not in sys.path:
-        sys.path.append(TEMPLATE_IMPL_DIR)
-    
-    try:
-        # 遍历impl目录下的所有.py文件
-        for filename in os.listdir(TEMPLATE_IMPL_DIR):
-            if filename.endswith(".py") and not filename.startswith("_"):
-                # 获取模块名（去掉.py后缀）
-                module_name = filename[:-3]
-                
-                try:
-                    # 导入模块
-                    module = importlib.import_module(module_name)
-                    
-                    # 遍历模块中的所有属性
-                    for attr_name in dir(module):
-                        attr = getattr(module, attr_name)
-                        
-                        # 检查是否为类，是否继承自FrameTemplate，且不是FrameTemplate本身
-                        if (
-                            isinstance(attr, type) and 
-                            issubclass(attr, FrameTemplate) and 
-                            attr is not FrameTemplate and
-                            not attr.__name__.startswith("_")  # 排除私有类
-                        ):
-                            template_classes.append(attr)
-                except Exception as e:
-                    print(f"加载模板模块 {module_name} 失败: {e}")
-    except Exception as e:
-        print(f"遍历模板实现目录失败: {e}")
-    
-    return template_classes
-
+# 在开发环境中使用相对路径，在PyInstaller打包后的环境中使用资源路径
+if hasattr(sys, '_MEIPASS'):
+    # PyInstaller打包后的环境
+    TEMPLATE_IMPL_DIR = os.path.join(sys._MEIPASS, "template", "impl")
+else:
+    # 开发环境
+    TEMPLATE_IMPL_DIR = os.path.join(os.path.dirname(__file__), "impl")
 
 # 初始化模板上下文
 _template_context = get_template_context()
 
-# 加载并注册所有模板类
-_template_classes = _load_template_classes()
-for template_class in _template_classes:
-    try:
-        _template_context.register_template(template_class)
-        print(f"已注册模板: {template_class.__name__}")
-    except Exception as e:
-        print(f"注册模板 {template_class.__name__} 失败: {e}")
+# 直接导入模板模块，确保在PyInstaller打包后的环境中也能正确加载
+try:
+    # 导入黑底模板
+    from .impl.black_bottom_template import BlackBottomTemplate
+    _template_context.register_template(BlackBottomTemplate)
+    print("已注册模板: BlackBottomTemplate")
+
+except Exception as e:
+    print(f"注册黑底模板失败: {e}")
+    import traceback
+    traceback.print_exc()
+
+try:
+    # 导入白底模板
+    from .impl.white_bottom_template import WhiteBottomTemplate
+    _template_context.register_template(WhiteBottomTemplate)
+    print("已注册模板: WhiteBottomTemplate")
+except Exception as e:
+    print(f"注册白底模板失败: {e}")
+    import traceback
+    traceback.print_exc()
 
 
 # 导出常用的类和函数

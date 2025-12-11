@@ -1,6 +1,8 @@
 # Photo Frame Helper 依赖列表
 # Pillow - 图片处理库（PIL的升级版）
 pillow>=9.5.0
+# PyYAML - YAML配置文件处理库
+pyyaml>=6.0.1
 
 # 注意：
 # - tkinter 是Python标准库，无需额外安装

@@ -2,6 +2,8 @@ from abc import ABC, abstractmethod
 from PIL import Image
 from entity.photo import Photo
 from typing import Dict, Any, Optional, List, Tuple, Union
+import os
+import sys
 
 
 class FrameTemplate(ABC):
@@ -15,6 +17,23 @@ class FrameTemplate(ABC):
     VERSION = "1.0"
     AUTHOR = ""
     COMPATIBILITY = {"python": ">=3.8", "pillow": ">=9.0"}
+    
+    @staticmethod
+    def get_resource_path(relative_path):
+        """
+        获取资源文件的路径，支持PyInstaller打包后的情况
+        
+        Args:
+            relative_path: 资源文件的相对路径
+            
+        Returns:
+            str: 资源文件的绝对路径
+        """
+        # 检查是否是PyInstaller打包后的环境
+        if hasattr(sys, '_MEIPASS'):
+            return os.path.join(sys._MEIPASS, relative_path)
+        # 如果是开发环境，直接返回相对路径
+        return os.path.join(os.path.abspath(""), relative_path)
     
     @abstractmethod
     def create_frame(self, photo: Photo, frame_width: int, frame_color: str, **kwargs) -> Image.Image:

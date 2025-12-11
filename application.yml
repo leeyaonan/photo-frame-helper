@@ -1,0 +1,47 @@
+# 应用程序配置
+application:
+  # 软件名称
+  name: "PhotoFrame Helper"
+  # 版本信息
+  version: "1.0.0"
+  # 软件描述
+  description: "一个简单易用的照片相框生成工具"
+  # 窗口配置
+  window:
+    # 窗口标题
+    title: "PhotoFrame Helper - 照片相框生成工具"
+    # 默认窗口宽度
+    width: 800
+    # 默认窗口高度
+    height: 600
+  # Logo配置
+  logo:
+    # Logo文件路径
+    path: "photo_frame_helper_logo.png"
+    # Logo目录
+    directory: "logo"
+
+# 输出配置
+output:
+  # 默认输出目录
+  default_directory: "output"
+  # 默认文件命名模式
+  default_naming_pattern: "{original_name}_frame"
+
+# 模板配置
+template:
+  # 默认模板
+  default_template: "black_bottom"
+  # 模板目录
+  directory: "template/impl"
+  # 要加载的模板列表（文件名，不含.py后缀）
+  templates:
+    - "black_bottom_template"
+    - "white_bottom_template"
+
+# 日志配置
+logging:
+  # 日志级别
+  level: "INFO"
+  # 日志文件路径
+  file: "photo_frame_helper.log"

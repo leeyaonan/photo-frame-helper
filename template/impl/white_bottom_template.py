@@ -1,8 +1,11 @@
+import os
+import sys
+import re
+from datetime import datetime
+from PIL import Image, ImageDraw, ImageFont, ImageEnhance
 from template.frame_template import FrameTemplate
-from PIL import Image, ImageDraw, ImageFont
 from entity.photo import Photo
 from typing import Optional
-import os
 
 class WhiteBottomTemplate(FrameTemplate):
     @property
@@ -154,10 +157,26 @@ class WhiteBottomTemplate(FrameTemplate):
             
             # 计算第一行文本的宽度
             first_line_text = "  ".join(right_first_line)
-            first_line_width = right_first_line_font.getbbox(first_line_text)[2] if right_first_line else 0
+            try:
+                if right_first_line:
+                    # 使用更兼容的getsize()方法获取文本尺寸
+                    first_line_width = right_first_line_font.getsize(first_line_text)[0]
+                else:
+                    first_line_width = 0
+            except Exception as e:
+                print(f"获取第一行文本宽度失败: {e}")
+                first_line_width = 0
             
             # 计算第二行文本的宽度
-            second_line_width = right_second_line_font.getbbox(right_second_line)[2] if right_second_line else 0
+            try:
+                if right_second_line:
+                    # 使用更兼容的getsize()方法获取文本尺寸
+                    second_line_width = right_second_line_font.getsize(right_second_line)[0]
+                else:
+                    second_line_width = 0
+            except Exception as e:
+                print(f"获取第二行文本宽度失败: {e}")
+                second_line_width = 0
             
             # 取两行中最宽的作为文本框宽度
             text_box_width = max(first_line_width, second_line_width)
@@ -393,7 +412,7 @@ class WhiteBottomTemplate(FrameTemplate):
         model = photo.exif_data.get("Model", "").lower()
         
         # 获取logo文件夹中的所有品牌logo文件
-        logo_files = [f for f in os.listdir("logo") if f.endswith(".png")]
+        logo_files = [f for f in os.listdir(FrameTemplate.get_resource_path("logo")) if f.endswith(".png")]
         
         # 从文件名中提取品牌名称并检查是否匹配相机型号
         for logo_file in logo_files:
@@ -421,7 +440,7 @@ class WhiteBottomTemplate(FrameTemplate):
         try:
             # 首先尝试加载带_black后缀的logo文件
             black_logo_filename = f"{camera_brand}_Logo_black.png"
-            black_logo_path = os.path.join("logo", black_logo_filename)
+            black_logo_path = FrameTemplate.get_resource_path(os.path.join("logo", black_logo_filename))
             
             # 如果存在黑色logo文件，则使用它
             if os.path.exists(black_logo_path):
@@ -430,7 +449,7 @@ class WhiteBottomTemplate(FrameTemplate):
             else:
                 # 否则使用普通logo文件
                 logo_filename = f"{camera_brand}_Logo.png"
-                logo_path = os.path.join("logo", logo_filename)
+                logo_path = FrameTemplate.get_resource_path(os.path.join("logo", logo_filename))
                 is_black_logo = False
             
             # 检查logo文件是否存在

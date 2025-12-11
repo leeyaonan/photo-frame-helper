@@ -40,3 +40,9 @@ font_test.png
 # exclude Logo
 !logo/
 !logo/*.png
+!photo_frame_helper_logo.png
+!icon.png
+
+# Packaging files
+build/
+dist/
