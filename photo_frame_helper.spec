@@ -5,7 +5,7 @@ a = Analysis(
     ['photo_frame_helper.py'],
     pathex=[],
     binaries=[],
-    datas=[('application.yml', '.'), ('template/impl', 'template/impl'), ('photo_frame_helper_logo.png', '.'), ('logo', 'logo')],
+    datas=[('application.yml', '.'), ('template/impl', 'template/impl'), ('photo_frame_helper_logo.png', '.'), ('photo_frame_helper_logo_filleted.png', '.'), ('logo', 'logo')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
@@ -32,7 +32,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['icon.png'],
+    icon=['photo_frame_helper_logo_filleted.png'],
 )
 coll = COLLECT(
     exe,
@@ -46,6 +46,6 @@ coll = COLLECT(
 app = BUNDLE(
     coll,
     name='photo_frame_helper.app',
-    icon='icon.png',
+    icon='photo_frame_helper_logo_filleted.png',
     bundle_identifier=None,
 )

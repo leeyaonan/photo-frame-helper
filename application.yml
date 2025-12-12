@@ -17,7 +17,7 @@ application:
   # Logo配置
   logo:
     # Logo文件路径
-    path: "photo_frame_helper_logo.png"
+    path: "photo_frame_helper_logo_filleted.png"
     # Logo目录
     directory: "logo"
 

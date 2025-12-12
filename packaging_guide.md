@@ -6,13 +6,13 @@
 
 ### 生成的文件
 
-* **可执行文件**：`dist/PhotoFrameHelper` (macOS) - 无需安装 Python 即可运行
+* **可执行文件**：`dist/photo_frame_helper.app` (macOS) - 无需安装 Python 即可运行
 
 ## 使用说明
 
 ### 最终用户使用
 
-1. 将 `dist/PhotoFrameHelper` 可执行文件复制给用户
+1. 将 `dist/photo_frame_helper.app` 可执行文件复制给用户
 2. 用户双击该文件即可运行应用程序
 3. **无需安装 Python 环境**！
 
@@ -51,23 +51,9 @@ pip install pyinstaller
 ### 2. 执行打包命令
 
 ```bash
-pyinstaller photo_frame_helper.spec
+source .venv/bin/activate && pyinstaller photo_frame_helper.spec
 ```
 
 ### 3. 获取可执行文件
 
 生成的可执行文件位于 `dist/` 目录下。
-
-## 常见问题
-
-### Q: 用户运行时出现 "无法打开，因为它来自身份不明的开发者"
-
-**A**: 在 macOS 上，打开系统偏好设置 → 安全性与隐私 → 点击 "仍要打开" 按钮。
-
-### Q: 可执行文件无法在其他操作系统上运行
-
-**A**: PyInstaller 打包的文件具有平台特定性，需要在目标平台上进行打包。
-
-## 联系信息
-
-如有任何问题，请随时联系项目维护者。
